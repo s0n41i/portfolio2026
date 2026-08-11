@@ -1031,12 +1031,16 @@ class Component extends DCLogic {
       if (!res.ok) throw new Error('Form submission failed');
       return res.json();
     })
-    .then(() => {
+    .then(data => {
+      if (data && (data.success === 'false' || data.success === false)) {
+        throw new Error(data.message || 'Form submission failed');
+      }
       this.setState({ sent: true, sending: false });
     })
     .catch(err => {
       console.error('Form submit error:', err);
-      this.setState({ sending: false, sendError: 'Could not send message. Please try again or email hello@sonali.ca.' });
+      const msg = err && err.message ? err.message : 'Could not send message. Please try again or email hello@sonali.ca.';
+      this.setState({ sending: false, sendError: msg });
     });
   };
   flip = i => ev => {
