@@ -361,7 +361,7 @@
                   <div style="font-size: clamp(26px, 4vw, 56px); line-height: 1.05; letter-spacing: -.04em;">message
                     sent</div>
                   <div style="font-size: 14px; letter-spacing: .04em; opacity: .6; line-height: 1.5;">thanks for
-                    reaching out — I'll get back to you at hello@sonali.ca soon.</div>
+                    reaching out — I'll get back to you soon :)</div>
                 </div>
               </sc-if>
               <sc-if value="{{ formHidden }}">
@@ -1013,18 +1013,18 @@ class Component extends DCLogic {
 
     this.setState({ sending: true, sendError: '' });
 
-    fetch('https://formsubmit.co/ajax/hello@sonali.ca', {
+    fetch('https://api.web3forms.com/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
       body: JSON.stringify({
+        access_key: 'ac405459-4f92-4177-be0a-a84e356658c4',
         name: name,
         email: email,
         message: message,
-        _subject: 'Portfolio contact from ' + name,
-        _captcha: 'false'
+        subject: 'Portfolio contact from ' + name
       })
     })
     .then(res => {
