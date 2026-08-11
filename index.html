@@ -390,7 +390,10 @@
                   </label>
                   <button type="submit"
                     style="align-self: flex-start; margin-top: 6px; background: none; border: none; display: inline-flex; align-items: center; min-height: {{ tapMin }}; padding: {{ tapPadBtn }}; margin-left: {{ tapNegBtn }}; cursor: pointer; font-family: 'Poppins', sans-serif; font-weight: 500; font-size: clamp(16px, 1.8vw, 22px); letter-spacing: -.01em; color: #14140F; transition: color .8s cubic-bezier(.35,0,.2,1);"
-                    style-hover="color: #B33463;">send →</button>
+                    style-hover="color: #B33463;">{{ sendBtnText }}</button>
+                  <sc-if value="{{ hasError }}">
+                    <div style="font-size: 13px; color: #B33463; margin-top: 4px;">{{ formError }}</div>
+                  </sc-if>
                 </form>
               </sc-if>
             </div>
@@ -522,7 +525,7 @@ const LAYOUTS_M = {
 const isNarrow = () => window.innerWidth < 760;
 
 class Component extends DCLogic {
-  state = { page: 'cover', flipped: -1, form: { name: '', email: '', message: '' }, sent: false, mob: isNarrow() };
+  state = { page: 'cover', flipped: -1, form: { name: '', email: '', message: '' }, sent: false, sending: false, sendError: '', mob: isNarrow() };
 
   L(page) { return (this.mob ? LAYOUTS_M : LAYOUTS)[page] || LAYOUTS[page]; }
   farRef = React.createRef();
@@ -1004,11 +1007,37 @@ class Component extends DCLogic {
   setField = key => ev => { const v = ev.target.value; this.setState(s => ({ form: { ...s.form, [key]: v } })); };
   submitForm = ev => {
     if (ev) ev.preventDefault();
+    if (this.state.sending) return;
     const { name, email, message } = this.state.form;
-    const subject = encodeURIComponent('Portfolio contact from ' + (name || 'someone'));
-    const body = encodeURIComponent((message || '') + '\n\n— ' + (name || '') + (email ? ' (' + email + ')' : ''));
-    window.location.href = 'mailto:hello@sonali.ca?subject=' + subject + '&body=' + body;
-    this.setState({ sent: true });
+    if (!name || !email || !message) return;
+
+    this.setState({ sending: true, sendError: '' });
+
+    fetch('https://formsubmit.co/ajax/hello@sonali.ca', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        name: name,
+        email: email,
+        message: message,
+        _subject: 'Portfolio contact from ' + name,
+        _captcha: 'false'
+      })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Form submission failed');
+      return res.json();
+    })
+    .then(() => {
+      this.setState({ sent: true, sending: false });
+    })
+    .catch(err => {
+      console.error('Form submit error:', err);
+      this.setState({ sending: false, sendError: 'Could not send message. Please try again or email hello@sonali.ca.' });
+    });
   };
   flip = i => ev => {
     if (ev) ev.preventDefault();
@@ -1108,6 +1137,10 @@ class Component extends DCLogic {
       tf0: tf(0), tf1: tf(1), tf2: tf(2), tf3: tf(3), tf4: tf(4), tf5: tf(5),
       formSent: this.state.sent,
       formHidden: !this.state.sent,
+      formSending: this.state.sending,
+      sendBtnText: this.state.sending ? 'sending...' : 'send →',
+      formError: this.state.sendError,
+      hasError: !!this.state.sendError,
       formName: this.state.form.name,
       formEmail: this.state.form.email,
       formMessage: this.state.form.message,
